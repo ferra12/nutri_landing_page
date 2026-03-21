@@ -9,6 +9,18 @@ env/
 # Environment variables
 .env
 
+# Google OAuth
+token.json
+client_secret*.json
+service-account-key.json
+
 # OS
 .DS_Store
 Thumbs.db
+
+# Google OAuth
+token.json
+client_secret*.json
+service-account-key.json
+
+*.jpeg
