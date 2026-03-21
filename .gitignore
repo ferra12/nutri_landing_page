@@ -23,5 +23,4 @@ token.json
 client_secret*.json
 service-account-key.json
 
-*.jpeg
 firebase-debug.log
