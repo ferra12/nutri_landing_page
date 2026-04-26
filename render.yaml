@@ -15,3 +15,9 @@ services:
         sync: false   # set in Render dashboard (use App Password for Gmail)
       - key: CONTACT_EMAIL
         sync: false   # email address that receives contact form messages
+      - key: GOOGLE_CALENDAR_ID
+        sync: false   # Gmail address used as Google Calendar ID
+      - key: GOOGLE_SA_FILE
+        value: service-account-key.json
+      - key: FLASK_DEBUG
+        value: false

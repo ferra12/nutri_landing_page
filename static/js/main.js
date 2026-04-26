@@ -131,7 +131,7 @@ if (contactForm) {
       });
 
       if (response.ok) {
-        showMsg('Messaggio inviato! Ti risponderò entro 24–48 ore.', 'success');
+        showMsg('Messaggio inviato! Ti risponderò al più presto.', 'success');
         contactForm.reset();
         required.forEach(f => (f.style.borderColor = ''));
       } else {

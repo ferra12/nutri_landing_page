@@ -18,9 +18,4 @@ service-account-key.json
 .DS_Store
 Thumbs.db
 
-# Google OAuth
-token.json
-client_secret*.json
-service-account-key.json
-
 firebase-debug.log

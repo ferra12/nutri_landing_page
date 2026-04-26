@@ -1,4 +1,5 @@
 import os
+import re
 import logging
 import smtplib
 from dotenv import load_dotenv
@@ -8,6 +9,8 @@ from email.message import EmailMessage
 from zoneinfo import ZoneInfo
 
 from flask import Flask, render_template, request, jsonify
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 import googleapiclient.discovery
@@ -15,8 +18,24 @@ googleapiclient.discovery.logger.setLevel("ERROR")
 
 app = Flask(__name__, static_url_path="", static_folder="static")
 
+limiter = Limiter(
+    get_remote_address,
+    app=app,
+    default_limits=[],
+    storage_uri="memory://",
+)
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+_EMAIL_RE = re.compile(r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
+
+def _valid_email(v: str) -> bool:
+    return bool(_EMAIL_RE.match(v)) and len(v) <= 254
+
+def _mask_email(email: str) -> str:
+    local, _, domain = email.partition("@")
+    return f"{local[:2]}***@{domain}" if len(local) > 2 else f"***@{domain}"
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
@@ -26,7 +45,7 @@ SMTP_USER     = os.environ.get("SMTP_USER", "")
 SMTP_PASS     = os.environ.get("SMTP_PASS", "")
 CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", SMTP_USER)
 
-GOOGLE_CALENDAR_ID = os.environ.get("GOOGLE_CALENDAR_ID", "giuliadadalt.biologa@gmail.com")
+GOOGLE_CALENDAR_ID = os.environ.get("GOOGLE_CALENDAR_ID", "")
 GOOGLE_SA_FILE     = os.environ.get("GOOGLE_SA_FILE", "service-account-key.json")
 CALENDAR_SCOPES    = ["https://www.googleapis.com/auth/calendar"]
 
@@ -50,6 +69,16 @@ def get_calendar_service():
         return None
 
 
+# ── Security headers ──────────────────────────────────────────────────────────
+@app.after_request
+def set_security_headers(response):
+    response.headers["X-Content-Type-Options"]  = "nosniff"
+    response.headers["X-Frame-Options"]          = "DENY"
+    response.headers["Referrer-Policy"]          = "strict-origin-when-cross-origin"
+    response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
+    return response
+
+
 # ── Routes ────────────────────────────────────────────────────────────────────
 @app.route("/")
 def index():
@@ -59,7 +88,13 @@ def index():
     return resp
 
 
+@app.route("/privacy")
+def privacy():
+    return render_template("privacy.html")
+
+
 @app.route("/api/availability")
+@limiter.limit("30 per minute")
 def availability():
     week_param = request.args.get("week")
     appt_type  = request.args.get("type", "prima-visita")
@@ -128,22 +163,29 @@ def availability():
 
 
 @app.route("/api/book", methods=["POST"])
+@limiter.limit("5 per minute; 20 per hour")
 def book():
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "Dati non validi."}), 400
 
-    nome      = data.get("nome", "").strip()
-    cognome   = data.get("cognome", "").strip()
+    nome      = data.get("nome", "").strip()[:100]
+    cognome   = data.get("cognome", "").strip()[:100]
     email_val = data.get("email", "").strip()
-    telefono  = data.get("telefono", "").strip()
+    telefono  = data.get("telefono", "").strip()[:20]
     appt_type = data.get("type", "prima-visita")
-    studio    = data.get("studio", "").strip()
+    studio    = data.get("studio", "").strip()[:200]
     date_str  = data.get("date", "").strip()
     time_str  = data.get("time", "").strip()
 
     if not all([nome, cognome, email_val, date_str, time_str]):
         return jsonify({"error": "Campi obbligatori mancanti."}), 422
+
+    if not _valid_email(email_val):
+        return jsonify({"error": "Indirizzo email non valido."}), 422
+
+    if appt_type not in DURATIONS:
+        return jsonify({"error": "Tipo visita non valido."}), 422
 
     duration = DURATIONS.get(appt_type, 60)
     try:
@@ -175,7 +217,7 @@ def book():
             },
         }
         service.events().insert(calendarId=GOOGLE_CALENDAR_ID, body=event).execute()
-        logger.info("Evento creato: %s %s – %s", nome, cognome, dt_start)
+        logger.info("Evento creato: %s", dt_start)
     except Exception as exc:
         logger.error("Errore creazione evento: %s", exc)
         return jsonify({"error": "Errore nella prenotazione. Riprova più tardi."}), 500
@@ -191,10 +233,10 @@ def book():
                 smtp.login(SMTP_USER, SMTP_PASS)
 
                 msg_nutri = EmailMessage()
-                msg_nutri["Subject"]   = f"Nuova prenotazione – {tipo_label} – {nome} {cognome} il {date_it}"
-                msg_nutri["From"]      = SMTP_USER
-                msg_nutri["To"]        = CONTACT_EMAIL
-                msg_nutri["Reply-To"]  = email_val
+                msg_nutri["Subject"]  = f"Nuova prenotazione – {tipo_label} – {nome} {cognome} il {date_it}"
+                msg_nutri["From"]     = SMTP_USER
+                msg_nutri["To"]       = CONTACT_EMAIL
+                msg_nutri["Reply-To"] = email_val
                 msg_nutri.set_content(
                     f"Tipo: {tipo_label}\nNome: {nome} {cognome}\n"
                     f"Email: {email_val}\nTelefono: {telefono or '—'}\n"
@@ -214,7 +256,7 @@ def book():
                 )
                 smtp.send_message(msg_paz)
 
-            logger.info("Email inviate per prenotazione di %s", email_val)
+            logger.info("Email inviate per prenotazione di %s", _mask_email(email_val))
         except Exception as exc:
             logger.error("Errore invio email: %s", exc)
 
@@ -222,53 +264,52 @@ def book():
 
 
 @app.route("/api/contact", methods=["POST"])
+@limiter.limit("5 per minute; 20 per hour")
 def contact():
     data = request.get_json(silent=True)
     if not data:
         return jsonify({"error": "Dati non validi."}), 400
 
-    nome      = data.get("nome", "").strip()
-    cognome   = data.get("cognome", "").strip()
+    nome      = data.get("nome", "").strip()[:100]
+    cognome   = data.get("cognome", "").strip()[:100]
     email     = data.get("email", "").strip()
-    telefono  = data.get("telefono", "").strip()
-    servizio  = data.get("servizio", "").strip()
-    messaggio = data.get("messaggio", "").strip()
+    telefono  = data.get("telefono", "").strip()[:20]
+    oggetto   = data.get("oggetto", "").strip()[:200]
+    servizio  = data.get("servizio", "").strip()[:200]
+    messaggio = data.get("messaggio", "").strip()[:2000]
 
-    if not all([nome, cognome, email, messaggio]):
+    if not all([nome, cognome, email, oggetto, messaggio]):
         return jsonify({"error": "Campi obbligatori mancanti."}), 422
 
-    if SMTP_USER and SMTP_PASS and CONTACT_EMAIL:
-        try:
-            with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
-                smtp.ehlo()
-                smtp.starttls()
-                smtp.login(SMTP_USER, SMTP_PASS)
+    if not _valid_email(email):
+        return jsonify({"error": "Indirizzo email non valido."}), 422
 
-                msg_nutri = EmailMessage()
-                msg_nutri["Subject"]  = f"Nuovo messaggio – {nome} {cognome}"
-                msg_nutri["From"]     = SMTP_USER
-                msg_nutri["To"]       = CONTACT_EMAIL
-                msg_nutri["Reply-To"] = email
-                msg_nutri.set_content(
-                    f"Nome: {nome} {cognome}\nEmail: {email}\n"
-                    f"Telefono: {telefono or '—'}\nServizio: {servizio or '—'}\n\n"
-                    f"Messaggio:\n{messaggio}\n"
-                )
-                smtp.send_message(msg_nutri)
+    if not (SMTP_USER and SMTP_PASS and CONTACT_EMAIL):
+        logger.error("Configurazione SMTP mancante")
+        return jsonify({"error": "Servizio email non configurato."}), 503
 
-                msg_paz = EmailMessage()
-                msg_paz["Subject"] = "Ho ricevuto il tuo messaggio – Giulia Da Dalt Biologa Nutrizionista"
-                msg_paz["From"]    = SMTP_USER
-                msg_paz["To"]      = email
-                msg_paz.set_content(
-                    f"Ciao {nome},\n\nho ricevuto il tuo messaggio e ti risponderò entro 24–48 ore.\n\n"
-                    f"A presto,\nGiulia Da Dalt\nBiologa Nutrizionista\n"
-                )
-                smtp.send_message(msg_paz)
+    try:
+        with smtplib.SMTP(SMTP_HOST, SMTP_PORT) as smtp:
+            smtp.ehlo()
+            smtp.starttls()
+            smtp.login(SMTP_USER, SMTP_PASS)
 
-            logger.info("Email inviate per messaggio di %s", email)
-        except Exception as exc:
-            logger.error("Errore invio email: %s", exc)
+            msg_nutri = EmailMessage()
+            msg_nutri["Subject"]  = f"Nuovo messaggio – {oggetto} – {nome} {cognome}"
+            msg_nutri["From"]     = SMTP_USER
+            msg_nutri["To"]       = CONTACT_EMAIL
+            msg_nutri["Reply-To"] = email
+            msg_nutri.set_content(
+                f"Nome: {nome} {cognome}\nEmail: {email}\n"
+                f"Telefono: {telefono or '—'}\nOggetto: {oggetto}\n\n"
+                f"Messaggio:\n{messaggio}\n"
+            )
+            smtp.send_message(msg_nutri)
+
+        logger.info("Email inviata per messaggio di %s", _mask_email(email))
+    except Exception as exc:
+        logger.error("Errore invio email: %s", exc)
+        return jsonify({"error": "Errore nell'invio email. Riprova più tardi."}), 500
 
     return jsonify({"ok": True}), 200
 
@@ -276,4 +317,5 @@ def contact():
 # ── Entry point ───────────────────────────────────────────────────────────────
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
-    app.run(host="0.0.0.0", port=port, debug=True)
+    debug = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    app.run(host="0.0.0.0", port=port, debug=debug)
