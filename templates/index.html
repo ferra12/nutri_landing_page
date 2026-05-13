@@ -9,6 +9,54 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/style.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@graph": [
+      {
+        "@type": "Person",
+        "name": "Giulia Da Dalt",
+        "jobTitle": "Biologa Nutrizionista",
+        "description": "Percorsi nutrizionali personalizzati per il tuo benessere. Specializzata in nutrizione clinica, sportiva e per tutte le fasce di età.",
+        "email": "giuliadadalt.biologa@gmail.com",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Spresiano",
+          "addressRegion": "TV",
+          "addressCountry": "IT"
+        },
+        "alumniOf": [
+          {"@type": "CollegeOrUniversity", "name": "Università degli Studi di Trieste"},
+          {"@type": "CollegeOrUniversity", "name": "Università degli Studi di Milano"}
+        ]
+      },
+      {
+        "@type": "LocalBusiness",
+        "name": "Dott.ssa Giulia Da Dalt – Biologa Nutrizionista",
+        "description": "Percorsi nutrizionali personalizzati: nutrizione clinica, sportiva e per tutte le fasce di età.",
+        "email": "giuliadadalt.biologa@gmail.com",
+        "url": "https://giuliadadalt.it",
+        "address": {
+          "@type": "PostalAddress",
+          "addressLocality": "Spresiano",
+          "addressRegion": "Treviso",
+          "addressCountry": "IT"
+        },
+        "areaServed": {"@type": "AdministrativeArea", "name": "Treviso"},
+        "hasOfferCatalog": {
+          "@type": "OfferCatalog",
+          "name": "Servizi nutrizionali",
+          "itemListElement": [
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Prima visita nutrizionale"}},
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Piano alimentare personalizzato"}},
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Nutrizione sportiva"}},
+            {"@type": "Offer", "itemOffered": {"@type": "Service", "name": "Nutrizione clinica"}}
+          ]
+        }
+      }
+    ]
+  }
+  </script>
 </head>
 <body>
 
@@ -110,9 +158,17 @@
           <h2 class="section-title">Nutrizionista<br>con approccio <em>umano</em></h2>
           <p class="text-body">
             Mi chiamo Giulia Da Dalt e sono una Biologa Nutrizionista.<br>
-            Mi sono laureata in Scienze e Tecnologie Biologiche all'Università di Trieste
-            e poi ho proseguito gli studi in Biologia applicata alle Scienze della Nutrizione
+            Mi sono laureata in Scienze e Tecnologie Biologiche all'Università di Trieste e 
+            poi ho proseguito gli studi in Biologia applicata alle Scienze della Nutrizione 
             all'Università di Milano, dove mi sono laureata con 110/110 e lode.
+          </p>
+          <p class="text-body">
+            Durante il mio percorso ho avuto l'opportunità di svolgere un tirocinio presso la 
+            Fondazione Valter Longo di Milano, dove ho preso parte a uno studio clinico sul quale 
+            ho basato la mia tesi di laurea, incentrata sul rischio cardiometabolico. Ho lavorato 
+            con pazienti affetti da patologie croniche, in particolare oncologiche, collaborando 
+            all'elaborazione di piani alimentari personalizzati in affiancamento al percorso 
+            terapeutico e partecipando a board meeting multidisciplinari.
           </p>
           <p class="text-body">
             Sono sempre stata curiosa di natura, capire come funziona il corpo umano,
@@ -121,10 +177,10 @@
             sapevo già avrebbe trovato la sua strada.
           </p>
           <p class="text-body">
-            Oggi lavoro con le persone per costruire insieme percorsi nutrizionali su misura,
+            Oggi lavoro con le persone per costruire insieme percorsi nutrizionali su misura, 
             basati sulla scienza ma calati nella vita reale di ognuno. </br>
-            Non esiste un'alimentazione giusta uguale per tutti: il mio obiettivo è aiutarti a trovare la tua, in modo sostenibile
-            e senza rinunciare al piacere del cibo.
+            Non esiste un'alimentazione giusta uguale per tutti: il mio obiettivo è aiutarti a 
+            trovare la tua, in modo sostenibile e senza rinunciare al piacere del cibo.
           </p>
         </div>
 
@@ -183,7 +239,9 @@
         <div class="servizio-card fade-in">
           <div class="servizio-number">01</div>
           <h3>Prima visita nutrizionale</h3>
-          <p>Anamnesi completa, valutazione delle abitudini alimentari, analisi della composizione corporea e definizione degli obiettivi.</p>
+          <p>Anamnesi completa, valutazione delle abitudini alimentari, analisi della 
+            composizione corporea (condotta attraverso misurazioni antropometriche e 
+            bioimpedenziometriche con BIA Akern 101 BIVA pro) e definizione degli obiettivi.</p>
           <!-- <div id="pillar-1" class="pillar-card">
             <div class="pillar-icon" aria-hidden="true">
               <svg viewBox="0 0 48 48" fill="none">
@@ -318,22 +376,34 @@
                 </svg>
               </div>
               <div>
-                <strong>Studio</strong>
-                <p>Piazzetta Trevisani nel Mondo, 1<br>Spresiano, TV</p>
-                <p>Tel: 0422 1930313</p>
+                <a href="https://centrosalus.info/" target="_blank" rel="noopener noreferrer">
+                  <strong>Centro Salus</strong>
+                </a>
+                <!-- <p>Piazzetta Trevisani nel Mondo, 1<br>Spresiano, TV</p> -->
+                <p>Spresiano, TV</p>
+                <!-- <p>Tel: 0422 1930313</p> -->
               </div>
             </div>
           </div>
 
           <div class="social-links">
-            <a href="#" class="social-link" aria-label="Instagram">
+            <a href="https://www.instagram.com/dr.ssa_giuliadadalt?igsh=MTN3dTZuMXJiNzBqdg%3D%3D&utm_source=qr" 
+              class="social-link" 
+              aria-label="Instagram" 
+              target="_blank" 
+              rel="noopener noreferrer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <rect x="2" y="2" width="20" height="20" rx="5"/>
                 <path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/>
                 <line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
               </svg>
             </a>
-            <a href="#" class="social-link" aria-label="LinkedIn">
+
+            <a href="https://www.linkedin.com/in/giulia-da-dalt-aa33292aa/" 
+              class="social-link" 
+              aria-label="LinkedIn" 
+              target="_blank" 
+              rel="noopener noreferrer">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6z"/>
                 <rect x="2" y="9" width="4" height="12"/>

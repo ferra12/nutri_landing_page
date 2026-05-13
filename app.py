@@ -8,7 +8,7 @@ from datetime import date, datetime, time, timedelta
 from email.message import EmailMessage
 from zoneinfo import ZoneInfo
 
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, Response
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from google.oauth2 import service_account
@@ -47,6 +47,7 @@ CONTACT_EMAIL = os.environ.get("CONTACT_EMAIL", SMTP_USER)
 
 GOOGLE_CALENDAR_ID = os.environ.get("GOOGLE_CALENDAR_ID", "")
 GOOGLE_SA_FILE     = os.environ.get("GOOGLE_SA_FILE", "service-account-key.json")
+GOOGLE_SA_JSON     = os.environ.get("GOOGLE_SA_JSON", "")
 CALENDAR_SCOPES    = ["https://www.googleapis.com/auth/calendar"]
 
 ROME_TZ    = ZoneInfo("Europe/Rome")
@@ -57,12 +58,19 @@ DURATIONS  = {"prima-visita": 60, "controllo": 30, "controllo-online": 30}
 
 # ── Google Calendar ───────────────────────────────────────────────────────────
 def get_calendar_service():
-    if not os.path.exists(GOOGLE_SA_FILE):
-        return None
     try:
-        creds = service_account.Credentials.from_service_account_file(
-            GOOGLE_SA_FILE, scopes=CALENDAR_SCOPES
-        )
+        if GOOGLE_SA_JSON:
+            import json
+            info = json.loads(GOOGLE_SA_JSON)
+            creds = service_account.Credentials.from_service_account_info(
+                info, scopes=CALENDAR_SCOPES
+            )
+        elif os.path.exists(GOOGLE_SA_FILE):
+            creds = service_account.Credentials.from_service_account_file(
+                GOOGLE_SA_FILE, scopes=CALENDAR_SCOPES
+            )
+        else:
+            return None
         return build("calendar", "v3", credentials=creds)
     except Exception as exc:
         logger.error("Errore init Calendar service: %s", exc)
@@ -91,6 +99,32 @@ def index():
 @app.route("/privacy")
 def privacy():
     return render_template("privacy.html")
+
+
+@app.route("/robots.txt")
+def robots():
+    base = request.url_root.rstrip("/")
+    body = f"User-agent: *\nAllow: /\nSitemap: {base}/sitemap.xml\n"
+    return Response(body, mimetype="text/plain")
+
+
+@app.route("/sitemap.xml")
+def sitemap():
+    base = request.url_root.rstrip("/")
+    urls = [
+        {"loc": f"{base}/",        "changefreq": "monthly", "priority": "1.0"},
+        {"loc": f"{base}/privacy", "changefreq": "yearly",  "priority": "0.3"},
+    ]
+    lines = ['<?xml version="1.0" encoding="UTF-8"?>',
+             '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">']
+    for u in urls:
+        lines.append(
+            f'  <url><loc>{u["loc"]}</loc>'
+            f'<changefreq>{u["changefreq"]}</changefreq>'
+            f'<priority>{u["priority"]}</priority></url>'
+        )
+    lines.append("</urlset>")
+    return Response("\n".join(lines), mimetype="application/xml")
 
 
 @app.route("/api/availability")
