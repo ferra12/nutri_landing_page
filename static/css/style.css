@@ -652,8 +652,36 @@ em {
 .contatti-grid {
   display: grid;
   grid-template-columns: 1fr 1.25fr;
-  gap: 80px;
-  align-items: start;
+  grid-template-areas:
+    "info map"
+    "form form";
+  gap: 60px 80px;
+  align-items: stretch;
+}
+
+.contatti-info { grid-area: info; }
+.contatti-map  { grid-area: map; }
+.contatti-form { grid-area: form; }
+
+.booking-widget { display: none; }
+
+.contatti-map {
+  position: relative;
+  width: 100%;
+  min-height: 380px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-md);
+  background: var(--off-white);
+}
+.contatti-map iframe {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border: 0;
+  position: absolute;
+  inset: 0;
 }
 
 .contact-items { display: flex; flex-direction: column; gap: 20px; margin: 28px 0; }
@@ -1368,7 +1396,15 @@ em {
   .servizi-grid { grid-template-columns: 1fr; }
 
   /* Contatti */
-  .contatti-grid { grid-template-columns: 1fr; gap: 48px; }
+  .contatti-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "info"
+      "map"
+      "form";
+    gap: 48px;
+  }
+  .contatti-map  { min-height: 300px; }
   .contact-form  { padding: 28px 20px; }
   .form-row      { grid-template-columns: 1fr; }
 
