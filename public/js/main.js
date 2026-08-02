@@ -83,19 +83,24 @@ const observer = new IntersectionObserver(
 animEls.forEach(el => observer.observe(el));
 
 /* =========================================
-   CONTACT FORM
+   FORMS (contatti + prenotazione)
    ========================================= */
-const contactForm  = document.getElementById('contactForm');
-const formMessage  = document.getElementById('formMessage');
+function showMsg(el, text, type) {
+  el.textContent = text;
+  el.className = 'form-message ' + type;
+  el.hidden = false;
+  el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  setTimeout(() => { el.hidden = true; }, 7000);
+}
 
-if (contactForm) {
-  contactForm.addEventListener('submit', async e => {
+function bindForm(form, url, msgEl, successText) {
+  if (!form) return;
+
+  form.addEventListener('submit', async e => {
     e.preventDefault();
 
-    // Validate required fields
-    const required = contactForm.querySelectorAll('[required]');
+    const required = form.querySelectorAll('[required]');
     let valid = true;
-
     required.forEach(field => {
       const invalid = field.type === 'checkbox' ? !field.checked : !field.value.trim();
       field.style.borderColor = invalid ? '#ef4444' : '';
@@ -103,60 +108,110 @@ if (contactForm) {
     });
 
     if (!valid) {
-      showMsg('Compila tutti i campi obbligatori (*).', 'error');
+      showMsg(msgEl, 'Compila tutti i campi obbligatori (*).', 'error');
       return;
     }
 
-    // Validate email format
-    const emailField = contactForm.querySelector('#email');
+    const emailField = form.querySelector('input[type="email"]');
     if (emailField && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailField.value)) {
       emailField.style.borderColor = '#ef4444';
-      showMsg('Inserisci un indirizzo email valido.', 'error');
+      showMsg(msgEl, 'Inserisci un indirizzo email valido.', 'error');
       return;
     }
 
-    const btn = contactForm.querySelector('button[type="submit"]');
+    const btn = form.querySelector('button[type="submit"]');
     const originalText = btn.textContent;
     btn.textContent = 'Invio in corso…';
     btn.disabled = true;
 
     try {
-      const formData = new FormData(contactForm);
-      const data = Object.fromEntries(formData.entries());
+      const data = Object.fromEntries(new FormData(form).entries());
+      // Una checkbox spedisce la stringa "on"; il server pretende un booleano.
+      data.privacy = form.querySelector('[name="privacy"]').checked;
 
-      const response = await fetch('/api/contact', {
+      const response = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       });
 
       if (response.ok) {
-        showMsg('Messaggio inviato! Ti risponderò al più presto.', 'success');
-        contactForm.reset();
+        showMsg(msgEl, successText, 'success');
+        form.reset();
         required.forEach(f => (f.style.borderColor = ''));
       } else {
         const err = await response.json().catch(() => ({}));
-        showMsg(err.error || 'Errore nell\'invio. Riprova o contattami direttamente.', 'error');
+        showMsg(msgEl, err.error || 'Errore nell\'invio. Riprova o contattami direttamente.', 'error');
       }
     } catch {
-      showMsg('Errore di rete. Controlla la connessione e riprova.', 'error');
+      showMsg(msgEl, 'Errore di rete. Controlla la connessione e riprova.', 'error');
     } finally {
       btn.textContent = originalText;
       btn.disabled = false;
     }
   });
 
-  // Clear red border on input
-  contactForm.querySelectorAll('input, select, textarea').forEach(field => {
+  form.querySelectorAll('input, select, textarea').forEach(field => {
     field.addEventListener('input', () => { field.style.borderColor = ''; });
   });
 }
 
+bindForm(
+  document.getElementById('contactForm'),
+  '/api/contact',
+  document.getElementById('formMessage'),
+  'Messaggio inviato! Ti risponderò al più presto.',
+);
 
-function showMsg(text, type) {
-  formMessage.textContent = text;
-  formMessage.className = 'form-message ' + type;
-  formMessage.hidden = false;
-  formMessage.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  setTimeout(() => { formMessage.hidden = true; }, 7000);
-}
+bindForm(
+  document.getElementById('bookingForm'),
+  '/api/book',
+  document.getElementById('bookingMessage'),
+  'Richiesta inviata! Ti confermo data e ora entro 24h.',
+);
+
+// Regole del campo data. Il browser sa applicare min/max ma non sa escludere
+// i weekend: quelli vanno segnalati a mano, altrimenti l'utente scopre
+// l'errore solo dopo aver compilato tutto il form.
+(function setupBookingDate() {
+  const dateInput = document.getElementById('bkDate');
+  if (!dateInput) return;
+
+  const romeToday = () => new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Rome' }).format(new Date());
+  const atNoon = iso => new Date(`${iso}T12:00:00Z`);
+
+  const min = atNoon(romeToday());
+  let lavorativi = 0;
+  while (lavorativi < 2) {
+    min.setUTCDate(min.getUTCDate() + 1);
+    const dow = min.getUTCDay();
+    if (dow !== 0 && dow !== 6) lavorativi++;
+  }
+
+  const max = atNoon(romeToday());
+  max.setUTCMonth(max.getUTCMonth() + 6);
+
+  dateInput.min = min.toISOString().slice(0, 10);
+  dateInput.max = max.toISOString().slice(0, 10);
+
+  dateInput.addEventListener('change', () => {
+    if (!dateInput.value) return;
+    const dow = atNoon(dateInput.value).getUTCDay();
+    const weekend = dow === 0 || dow === 6;
+    dateInput.style.borderColor = weekend ? '#ef4444' : '';
+    if (weekend) {
+      showMsg(document.getElementById('bookingMessage'), 'Lo studio è chiuso nel weekend, scegli un giorno feriale.', 'error');
+    }
+  });
+})();
+
+// Lo studio non ha senso per una visita online.
+(function setupStudioToggle() {
+  const type = document.getElementById('bkType');
+  const group = document.getElementById('bkStudioGroup');
+  if (!type || !group) return;
+
+  const sync = () => { group.hidden = type.value === 'controllo-online'; };
+  type.addEventListener('change', sync);
+  sync();
+})();
