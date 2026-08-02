@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { romeToday, minBookingDate, isWeekend } from '../lib/form.js';
+import { romeToday, minBookingDate, maxBookingDate, isWeekend } from '../lib/form.js';
 
 test('romeToday restituisce la data di Roma, non UTC', () => {
   // 2026-03-15T23:30Z è già il 16 marzo a Roma (UTC+1)
@@ -79,6 +79,29 @@ test('validate rifiuta un campo troppo lungo', () => {
   assert.match(r.errors[0], /Nome/);
 });
 
+test('validate non esplode su input nullo o non-oggetto', () => {
+  const s = { nome: { label: 'Nome', required: true, max: 100 } };
+  for (const input of [null, undefined, 'stringa', 42, []]) {
+    const r = validate(input, s);
+    assert.equal(r.ok, false, `input ${JSON.stringify(input)} deve dare ok:false, non lanciare`);
+  }
+});
+
+test('clean.privacy riflette il valore reale, non una costante', () => {
+  const s = { privacy: { label: 'Consenso privacy', bool: true } };
+  assert.equal(validate({ privacy: true }, s).clean.privacy, true);
+  assert.equal(validate({ privacy: 'on' }, s).clean.privacy, false);
+  assert.equal(validate({}, s).clean.privacy, false);
+});
+
+test('maxBookingDate somma 6 mesi', () => {
+  assert.equal(maxBookingDate(new Date('2026-08-10T10:00:00Z')), '2027-02-10');
+  // Overflow di fine mese noto e accettato: il 31 agosto + 6 mesi non esiste
+  // (31 febbraio) e JS normalizza in avanti. È un limite superiore su una
+  // richiesta confermata a mano: qualche giorno di tolleranza non danneggia.
+  assert.equal(maxBookingDate(new Date('2026-08-31T10:00:00Z')), '2027-03-03');
+});
+
 import { sendMail, json } from '../lib/form.js';
 
 test('sendMail simula l\'invio quando manca la chiave API', async () => {
@@ -91,7 +114,7 @@ test('sendMail chiama Resend quando la chiave è presente', async () => {
   const chiamate = [];
   const fetchOriginale = globalThis.fetch;
   globalThis.fetch = async (url, opts) => {
-    chiamate.push({ url, body: JSON.parse(opts.body) });
+    chiamate.push({ url, body: JSON.parse(opts.body), headers: opts.headers });
     return { ok: true };
   };
 
@@ -106,6 +129,30 @@ test('sendMail chiama Resend quando la chiave è presente', async () => {
     assert.equal(chiamate[0].url, 'https://api.resend.com/emails');
     assert.equal(chiamate[0].body.reply_to, 'paziente@example.it');
     assert.deepEqual(chiamate[0].body.to, ['destinataria@example.it']);
+    assert.equal(chiamate[0].body.from, 'no-reply@giuliadadalt.it');
+    assert.equal(chiamate[0].headers.authorization, 'Bearer k');
+  } finally {
+    globalThis.fetch = fetchOriginale;
+  }
+});
+
+test('sendMail restituisce ok:false senza lanciare se fetch fallisce', async () => {
+  const fetchOriginale = globalThis.fetch;
+  globalThis.fetch = async () => { throw new Error('rete giù'); };
+  try {
+    const r = await sendMail({ subject: 'x', text: 'y' }, { RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.it', MAIL_TO: 'c@d.it' });
+    assert.equal(r.ok, false);
+  } finally {
+    globalThis.fetch = fetchOriginale;
+  }
+});
+
+test('sendMail restituisce ok:false quando Resend rifiuta', async () => {
+  const fetchOriginale = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: false, status: 403, text: async () => '{"message":"domain is not verified"}' });
+  try {
+    const r = await sendMail({ subject: 'x', text: 'y' }, { RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.it', MAIL_TO: 'c@d.it' });
+    assert.equal(r.ok, false);
   } finally {
     globalThis.fetch = fetchOriginale;
   }
