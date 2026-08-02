@@ -67,6 +67,22 @@ Gli header di sicurezza oggi impostati da `@app.after_request` si spostano nel
 file `_headers`: `X-Content-Type-Options`, `X-Frame-Options`,
 `Referrer-Policy`, `Strict-Transport-Security`.
 
+`app.py`, `requirements.txt` e `templates/` vengono **eliminati**: scegliendo
+Resend come trasporto, mantenere in parallelo una versione Flask
+significherebbe duplicare anche l'invio email, non solo servire gli stessi
+file. Il contratto HTTP resta comunque stabile e la storia git conserva il
+codice, quindi reintrodurre un backend Python più avanti non richiede di
+toccare il frontend.
+
+### Fuso orario
+
+Tutte le date si calcolano su `Europe/Rome`, da entrambi i lati. I Workers
+girano in UTC e il browser in ora locale: senza fissare il fuso, "+2 giorni
+lavorativi" calcolato dal client e rivalidato dal server può divergere di un
+giorno a cavallo della mezzanotte, e il paziente riceve un 422 su una data che
+il form gli ha permesso di scegliere. `app.py` usava `ROME_TZ` per lo stesso
+motivo.
+
 ### Contratto HTTP
 
 Invariato rispetto a oggi, così il frontend resta indipendente da chi risponde
@@ -84,17 +100,31 @@ POST /api/contact
   → 400 | 422 | 502  { error: "messaggio in italiano" }
 ```
 
-I campi di `/api/contact` restano quelli di oggi, ma i codici di errore si
-allineano alla tabella sotto: l'implementazione Flask risponde 500 su
-fallimento invio e 503 se SMTP non è configurato, qui è **502 in entrambi i
-casi**. È l'unico scostamento voluto dal comportamento attuale.
+Entrambi accettano anche `website`, il campo honeypot: se valorizzato la
+richiesta viene scartata (vedi §Errori).
+
+Due scostamenti voluti dal comportamento Flask attuale:
+
+- **Codici errore.** `app.py` risponde 500 su fallimento invio e 503 se SMTP
+  non è configurato; qui è 502 in entrambi i casi.
+- **Campo `servizio` rimosso** da `/api/contact`. `app.py` lo legge ancora, ma
+  la select corrispondente è già commentata nell'HTML: il campo arriva sempre
+  vuoto. Rimozione voluta, non dimenticanza.
 
 ### Modulo condiviso `lib/form.js`
 
 Due funzioni, usate da entrambe le Functions:
 
-- `validate(data, schema)` → `{ ok, errors }`
-- `sendMail({ subject, text, replyTo })` → chiamata all'API Resend
+- `validate(data, schema)` → `{ ok, errors }`. Lo schema è un oggetto che
+  mappa nome campo → regola: obbligatorietà, lunghezza massima, whitelist di
+  valori ammessi, o una funzione per i casi condizionali come `studio`.
+- `sendMail({ subject, text, replyTo }, env)` → chiamata all'API Resend.
+  Destinatario e mittente vengono da `env`, non dal chiamante.
+
+**Se `RESEND_API_KEY` non è definita, `sendMail()` registra e restituisce
+successo simulato senza chiamare Resend.** Serve a due cose: rende la suite di
+test eseguibile senza riempire la casella di Giulia a ogni run, e permette lo
+sviluppo locale con `wrangler pages dev` senza avere la chiave a portata.
 
 Ogni Function si riduce così a circa 25 righe: parse, validate, sendMail,
 risposta.
@@ -192,8 +222,9 @@ successo finto lo lascia convinto di aver funzionato.
 
 ## Anti-spam
 
-Campo honeypot nascosto, più una regola WAF di rate limit su `/api/*` — il
-piano Cloudflare free ne include una. Sostituisce `flask-limiter`, che
+Campo honeypot nascosto di nome `website` — plausibile per un bot che compila
+tutto, mai visibile a un umano — più una regola WAF di rate limit su `/api/*`:
+il piano Cloudflare free ne include una. Sostituisce `flask-limiter`, che
 dipendeva da uno stato in-process inesistente su Workers.
 
 Turnstile va aggiunto solo se lo spam si presenta davvero.
@@ -217,30 +248,55 @@ parametrico: `wrangler pages dev` in locale, oppure la produzione.
 
 ## Configurazione del deploy
 
-Cloudflare Pages rileva `requirements.txt` e tenta un build Python. Nelle
-impostazioni del progetto: framework preset `None`, build command vuoto,
-output directory `public`.
+Impostazioni del progetto Pages: framework preset `None`, build command vuoto,
+output directory `public`. (`requirements.txt` viene eliminato, quindi non c'è
+più il rischio che Pages tenti un build Python.)
 
 Il repo non ha ancora un `package.json`. Ne serve uno minimo per `wrangler`
 (dipendenza di sviluppo) e per lo script di test; nessuna dipendenza a runtime
 — le Functions usano solo `fetch` e le API standard di Workers.
 
-Secret di Pages: `RESEND_API_KEY`. Il dominio è già su Cloudflare, quindi la
-verifica DNS richiesta da Resend è immediata.
+Variabili d'ambiente di Pages:
+
+| Nome | Ruolo |
+|---|---|
+| `RESEND_API_KEY` | secret; se assente `sendMail()` simula l'invio |
+| `MAIL_TO` | casella di Giulia che riceve le richieste |
+| `MAIL_FROM` | mittente su dominio verificato, es. `no-reply@giuliadadalt.it` |
+
+Il dominio è già su Cloudflare, quindi la verifica DNS richiesta da Resend è
+immediata.
+
+## Cutover e rollback
+
+Il DNS punta oggi al tunnel. Il passaggio va fatto in quest'ordine, così che
+esista sempre una versione funzionante:
+
+1. Deploy su Pages sul dominio `*.pages.dev`, con il tunnel ancora attivo e il
+   sito in produzione intatto
+2. Verifica completa sull'URL di anteprima: entrambe le form inviano davvero
+   email, header presenti, pagine raggiungibili
+3. Spostamento del dominio su Pages come custom domain
+4. Tunnel spento solo dopo che il dominio serve da Pages
+
+Rollback: riaccendere il tunnel e ripuntare il DNS. Finché il passo 4 non è
+fatto, il ripristino è immediato. Dopo, `app.py` va recuperato dalla storia
+git — motivo per cui il passo 2 non va abbreviato.
 
 ## Codice eliminato
 
+- `app.py` e `requirements.txt` per intero
 - `static/js/booking.js` per intero
 - le regole CSS `bw-*` in `static/css/style.css`
-- il blocco HTML commentato del widget in `templates/index.html`
-- in `app.py`: `get_calendar_service()`, `DURATIONS`, le route
-  `/api/availability` e `/api/book`, l'intero blocco `smtplib`
-- da `requirements.txt`: `google-api-python-client`, `google-auth`,
-  `flask-limiter`
+- il blocco HTML commentato del widget, sostituito dal markup nuovo
 - `service-account-key.json` non ha più alcun uso
 
 La cartella `templates/` sparisce: i file non contengono alcun costrutto Jinja
-e si spostano in `public/` invariati.
+e si spostano in `public/` invariati. Anche `static/` sparisce, con il suo
+contenuto spostato in `public/`.
+
+Il tunnel Cloudflare e le istruzioni di avvio in `README.md` vanno con loro:
+il README va riscritto per il flusso Pages.
 
 Nota separata, non parte di questo lavoro: `ADR-001-architettura-app.md`
 descrive lo stack Flask come architettura corrente e andrà aggiornato o
