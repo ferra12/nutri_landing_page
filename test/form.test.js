@@ -78,3 +78,42 @@ test('validate rifiuta un campo troppo lungo', () => {
   assert.equal(r.ok, false);
   assert.match(r.errors[0], /Nome/);
 });
+
+import { sendMail, json } from '../lib/form.js';
+
+test('sendMail simula l\'invio quando manca la chiave API', async () => {
+  const r = await sendMail({ subject: 'x', text: 'y' }, {});
+  assert.equal(r.ok, true);
+  assert.equal(r.simulated, true);
+});
+
+test('sendMail chiama Resend quando la chiave è presente', async () => {
+  const chiamate = [];
+  const fetchOriginale = globalThis.fetch;
+  globalThis.fetch = async (url, opts) => {
+    chiamate.push({ url, body: JSON.parse(opts.body) });
+    return { ok: true };
+  };
+
+  try {
+    const r = await sendMail(
+      { subject: 'Nuova richiesta', text: 'corpo', replyTo: 'paziente@example.it' },
+      { RESEND_API_KEY: 'k', MAIL_FROM: 'no-reply@giuliadadalt.it', MAIL_TO: 'destinataria@example.it' },
+    );
+    assert.equal(r.ok, true);
+    assert.equal(r.simulated, false);
+    assert.equal(chiamate.length, 1);
+    assert.equal(chiamate[0].url, 'https://api.resend.com/emails');
+    assert.equal(chiamate[0].body.reply_to, 'paziente@example.it');
+    assert.deepEqual(chiamate[0].body.to, ['destinataria@example.it']);
+  } finally {
+    globalThis.fetch = fetchOriginale;
+  }
+});
+
+test('json costruisce una Response con lo status giusto', async () => {
+  const res = json({ error: 'no' }, 422);
+  assert.equal(res.status, 422);
+  assert.equal(res.headers.get('content-type'), 'application/json');
+  assert.deepEqual(await res.json(), { error: 'no' });
+});
