@@ -1431,3 +1431,20 @@ em {
 
   .servizio-card { padding: 26px 20px; }
 }
+
+/* Honeypot anti-spam: invisibile a un umano, compilato dai bot */
+.hp-field {
+  position: absolute;
+  left: -9999px;
+  width: 1px;
+  height: 1px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.bk-note {
+  margin-top: 0.75rem;
+  font-size: 0.85rem;
+  opacity: 0.75;
+  text-align: center;
+}

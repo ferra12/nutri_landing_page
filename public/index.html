@@ -423,163 +423,71 @@
 
         <div class="contatti-form fade-in">
 
-          <!-- ── Booking Widget ── -->
-          <!-- <div class="booking-widget" id="bookingWidget"> -->
-
-            <!-- STEP 1: Calendario -->
-            <!-- <div id="bwStepCalendar"> -->
-
-              <!-- <div class="bw-top">
-                <div class="bw-icon-wrap" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20">
-                    <rect x="3" y="4" width="18" height="18" rx="2"/>
-                    <line x1="16" y1="2" x2="16" y2="6"/>
-                    <line x1="8" y1="2" x2="8" y2="6"/>
-                    <line x1="3" y1="10" x2="21" y2="10"/>
-                  </svg>
-                </div>
-                <div class="bw-header-text">
-                  <strong class="bw-title">Prenota la tua consulenza</strong>
-                  <p class="bw-subtitle">Scegli il tipo di visita e uno slot disponibile</p>
-                </div>
-              </div> -->
-
-              <!-- Tipo di visita -->
-              <!-- <div class="bw-type-selector" role="group" aria-label="Tipo di visita">
-                <button class="bw-type-btn active" type="button" data-type="prima-visita">
-                  <span class="bw-type-name">Prima Visita - 110€</span>
-                  <span class="bw-type-dur">60 min</span>
-                </button>
-                <button class="bw-type-btn" type="button" data-type="controllo">
-                  <span class="bw-type-name">Visita di Controllo - 80€</span>
-                  <span class="bw-type-dur">30 min</span>
-                </button>
-                <button class="bw-type-btn" type="button" data-type="controllo-online">
-                  <span class="bw-type-name">Visita di Controllo online - 70€</span>
-                  <span class="bw-type-dur">30 min</span>
-                </button>
-              </div> -->
-
-              <!-- Studio -->
-              <!-- <div class="bw-studio-selector" role="group" aria-label="Studio">
-                <button class="bw-studio-btn active" type="button" data-studio="studio-1">
-                  <span class="bw-studio-info">
-                    <span class="bw-studio-name">Studio 1</span>
-                    <span class="bw-studio-addr">Via Roma 1, Città</span>
-                  </span>
-                </button>
-                <button class="bw-studio-btn" type="button" data-studio="studio-2">
-                  <span class="bw-studio-info">
-                    <span class="bw-studio-name">Studio 2</span>
-                    <span class="bw-studio-addr">Via Milano 2, Città</span>
-                  </span>
-                </button>
-                <button class="bw-studio-btn" type="button" data-studio="studio-3">
-                  <span class="bw-studio-info">
-                    <span class="bw-studio-name">Studio 3</span>
-                    <span class="bw-studio-addr">Via Napoli 3, Città</span>
-                  </span>
-                </button>
-              </div> -->
-
-              <!-- Navigazione settimana -->
-              <!-- <div class="bw-week-nav">
-                <button class="bw-nav-btn" id="bwPrevWeek" type="button" aria-label="Settimana precedente" disabled>
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-                </button>
-                <span class="bw-week-label" id="bwWeekLabel">—</span>
-                <button class="bw-nav-btn" id="bwNextWeek" type="button" aria-label="Settimana successiva">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="15" height="15" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
-                </button>
-              </div> -->
-
-              <!-- Loading -->
-              <!-- <div class="bw-loading" id="bwLoading" hidden aria-live="polite">
-                <div class="bw-spinner" aria-hidden="true"></div>
-                <span>Caricamento disponibilità…</span>
-              </div> -->
-
-              <!-- Griglia calendario -->
-              <!-- <div class="bw-calendar" id="bwCalendar" aria-label="Slot disponibili"></div> -->
-
-              <!-- Legenda -->
-              <!-- <div class="bw-legend" id="bwLegend" hidden aria-hidden="true">
-                <span><span class="bw-dot bw-dot-avail"></span>Disponibile</span>
-                <span><span class="bw-dot bw-dot-taken"></span>Occupato</span>
-              </div> -->
-          
-              <!-- Documentazione prima visita -->
-              <!-- <div id="bwPrimaVisitaNote" class="bw-prima-visita-note">
-                <p class="bw-note-title">Per la prima visita è necessaria la seguente documentazione:</p>
-                <ul class="bw-note-list">
-                  <li>
-                    <strong>Consenso al trattamento dei dati</strong> — Il modulo verrà inviato via email dopo la conferma dell'appuntamento. Dovrà essere firmato e restituito prima della visita.
-                  </li>
-                  <li>
-                    <strong>Esami del sangue</strong> — Non antecedenti ai 6 mesi. In caso di mancata disponibilità, è possibile contattarmi via email per ricevere indicazioni su come procedere.
-                  </li>
-                  <li>
-                    <strong>Documentazione clinica</strong> — Referti, diagnosi o cartelle cliniche relativi allo stato di salute. Obbligatoria in caso di patologie precedentemente diagnosticate.
-                  </li>
-                </ul>
+          <!-- ── Richiesta appuntamento ── -->
+          <form id="bookingForm" class="contact-form" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bkType">Tipo di visita *</label>
+                <select id="bkType" name="type" required>
+                  <option value="prima-visita">Prima Visita Nutrizionale</option>
+                  <option value="controllo">Visita di Controllo</option>
+                  <option value="controllo-online">Visita di Controllo Online</option>
+                </select>
               </div>
-
-            </div> -->
-
-            <!-- STEP 2: Form di conferma -->
-            <!-- <div id="bwStepForm" hidden>
-              <button class="bw-back-btn" id="bwBackBtn" type="button">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="13" height="13" aria-hidden="true"><polyline points="15 18 9 12 15 6"/></svg>
-                Torna al calendario
-              </button>
-
-              <div id="bwSlotInfo"></div>
-
-              <form id="bwForm" class="bw-booking-form" novalidate>
-                <input type="hidden" id="bwDate" name="date">
-                <input type="hidden" id="bwTime" name="time">
-                <input type="hidden" id="bwType" name="type">
-                <div class="form-row">
-                  <div class="form-group">
-                    <label for="bwNome">Nome *</label>
-                    <input type="text" id="bwNome" name="nome" placeholder="Il tuo nome" required>
-                  </div>
-                  <div class="form-group">
-                    <label for="bwCognome">Cognome *</label>
-                    <input type="text" id="bwCognome" name="cognome" placeholder="Il tuo cognome" required>
-                  </div>
-                </div>
-                <div class="form-group">
-                  <label for="bwEmail">Email *</label>
-                  <input type="email" id="bwEmail" name="email" placeholder="la.tua@email.it" required>
-                </div>
-                <div class="form-group">
-                  <label for="bwTel">Telefono</label>
-                  <input type="tel" id="bwTel" name="telefono" placeholder="+39 000 000 0000">
-                </div>
-                <div class="form-check">
-                  <input type="checkbox" id="bwPrivacy" name="privacy" required>
-                  <label for="bwPrivacy">Ho letto e accetto la <a href="/privacy">Privacy Policy</a> *</label>
-                </div>
-                <p id="bwFormError" class="bw-form-error" hidden role="alert"></p>
-                <button type="submit" class="btn-primary btn-full" id="bwSubmitBtn">Conferma prenotazione</button>
-              </form>
-            </div> -->
-
-            <!-- STEP 3: Successo -->
-            <!-- <div id="bwStepSuccess" hidden>
-              <div class="bw-success">
-                <div class="bw-success-check" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" width="26" height="26"><polyline points="20 6 9 17 4 12"/></svg>
-                </div>
-                <h3 class="bw-success-title">Prenotazione confermata!</h3>
-                <p class="bw-success-msg">Riceverai una email di conferma a breve.</p>
-                <div class="bw-success-details" id="bwSuccessDetails"></div>
-                <button type="button" class="btn-ghost bw-new-btn" id="bwNewBooking">Nuova prenotazione</button>
+              <div class="form-group" id="bkStudioGroup">
+                <label for="bkStudio">Studio *</label>
+                <select id="bkStudio" name="studio">
+                  <option value="studio-1">Centro Salus – Spresiano (TV)</option>
+                  <option value="studio-2">Secondo studio</option>
+                </select>
               </div>
             </div>
-
-          </div> -->
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bkDate">Giorno preferito *</label>
+                <input type="date" id="bkDate" name="date" required>
+              </div>
+              <div class="form-group">
+                <label for="bkFascia">Fascia oraria *</label>
+                <select id="bkFascia" name="fascia" required>
+                  <option value="mattina">Mattina (9–13)</option>
+                  <option value="pomeriggio">Pomeriggio (14–18)</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bkNome">Nome *</label>
+                <input type="text" id="bkNome" name="nome" placeholder="Il tuo nome" required>
+              </div>
+              <div class="form-group">
+                <label for="bkCognome">Cognome *</label>
+                <input type="text" id="bkCognome" name="cognome" placeholder="Il tuo cognome" required>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="bkEmail">Email *</label>
+                <input type="email" id="bkEmail" name="email" placeholder="la.tua@email.it" required>
+              </div>
+              <div class="form-group">
+                <label for="bkTelefono">Telefono</label>
+                <input type="tel" id="bkTelefono" name="telefono" placeholder="+39 000 000 0000">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="bkNote">Note</label>
+              <textarea id="bkNote" name="note" rows="3" placeholder="Qualcosa che è utile sapere prima della visita"></textarea>
+            </div>
+            <div class="form-check">
+              <input type="checkbox" id="bkPrivacy" name="privacy" required>
+              <label for="bkPrivacy">Ho letto e accetto la <a href="/privacy">Privacy Policy</a> *</label>
+            </div>
+            <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
+            <button type="submit" class="btn-primary btn-full">Richiedi appuntamento</button>
+            <p class="bk-note">Riceverai conferma con data e ora esatte entro 24h.</p>
+            <div id="bookingMessage" class="form-message" hidden role="alert"></div>
+          </form>
 
           <div class="form-divider"><span>Per qualsiasi informazione compila questo form</span></div>
 
@@ -627,6 +535,7 @@
               <input type="checkbox" id="privacy" name="privacy" required>
               <label for="privacy">Ho letto e accetto la <a href="/privacy">Privacy Policy</a> *</label>
             </div>
+            <input type="text" name="website" tabindex="-1" autocomplete="off" aria-hidden="true" class="hp-field">
             <button type="submit" class="btn-primary btn-full">Invia messaggio</button>
             <div id="formMessage" class="form-message" hidden role="alert"></div>
           </form>
@@ -669,6 +578,5 @@
   </footer>
 
   <script src="/js/main.js"></script>
-  <script src="/js/booking.js"></script>
 </body>
 </html>
