@@ -54,11 +54,14 @@ functions/api/book.js
 functions/api/contact.js
 ```
 
-Il codice condiviso sta in `lib/` e non in `functions/`, perché ogni file
-sotto `functions/` viene esposto come route.
+Il codice condiviso sta in `lib/`, fuori da `functions/`, dove ogni file
+diventa una route. Anche `functions/_lib/` funzionerebbe — Pages esclude dal
+routing i percorsi con prefisso underscore — ma tenerlo fuori rende la
+separazione esplicita e non dipende da quella convenzione.
 
-`robots.txt` e `sitemap.xml` diventano file statici con URL assoluta fissa,
-al posto delle route Flask che le generavano da `request.url_root`.
+`robots.txt` e `sitemap.xml` diventano file statici con URL assoluta fissa su
+`https://giuliadadalt.it`, al posto delle route Flask che le generavano da
+`request.url_root`.
 
 Gli header di sicurezza oggi impostati da `@app.after_request` si spostano nel
 file `_headers`: `X-Content-Type-Options`, `X-Frame-Options`,
@@ -71,13 +74,20 @@ e una futura versione Flask resta possibile senza modifiche al client.
 
 ```
 POST /api/book
-  { nome, cognome, email, telefono, type, studio, date, fascia, note }
+  { nome, cognome, email, telefono, type, studio, date, fascia, note, privacy }
   → 200 { ok: true }
   → 400 | 422 | 502  { error: "messaggio in italiano" }
 
 POST /api/contact
-  invariato rispetto all'implementazione Flask attuale
+  { nome, cognome, email, telefono, oggetto, messaggio, privacy }
+  → 200 { ok: true }
+  → 400 | 422 | 502  { error: "messaggio in italiano" }
 ```
+
+I campi di `/api/contact` restano quelli di oggi, ma i codici di errore si
+allineano alla tabella sotto: l'implementazione Flask risponde 500 su
+fallimento invio e 503 se SMTP non è configurato, qui è **502 in entrambi i
+casi**. È l'unico scostamento voluto dal comportamento attuale.
 
 ### Modulo condiviso `lib/form.js`
 
@@ -100,19 +110,34 @@ Giorno       [ 12/08/2026 📅 ]   Fascia [Mattina (9-13) ▾]
 
 Nome*  Cognome*  Email*  Telefono   Note
 
+[ ] Ho letto e accetto la Privacy Policy *
+
                                     [ Richiedi appuntamento ]
 
 ℹ Riceverai conferma con data e ora esatte entro 24h.
 ```
 
-`<input type="date">` con `min` impostato a domani porta calendario,
-localizzazione e picker mobile direttamente dal browser.
+`<input type="date">` porta calendario, localizzazione e picker mobile
+direttamente dal browser. `min` è impostato a **+2 giorni lavorativi**, non a
+domani: promettere conferma entro 24h su una richiesta per l'indomani mattina
+è una promessa che non si può mantenere.
+
+Il browser però **non sa escludere i weekend** — `min` e `max` esistono, la
+disabilitazione dei singoli giorni no. Servono tre righe di JS sull'evento
+`change` che segnalano subito la scelta di sabato o domenica, invece di far
+scoprire l'errore con un 422 dopo il submit.
+
+La checkbox privacy è obbligatoria, com'è già oggi in entrambe le form
+([index.html:561](../../../templates/index.html) per il booking,
+[index.html:627](../../../templates/index.html) per i contatti).
 
 Campi e valori ammessi:
 
 - `type`: `prima-visita`, `controllo`, `controllo-online`
-- `studio`: `studio-1`, `studio-2`
+- `studio`: `studio-1`, `studio-2` — richiesto solo se `type` non è
+  `controllo-online`, altrimenti il campo è nascosto e il valore ignorato
 - `fascia`: `mattina`, `pomeriggio`
+- `privacy`: deve essere `true`
 
 La nota "conferma entro 24h" è parte del design, non decorazione: è ciò che
 rende esplicito al paziente che sta inviando una richiesta e non prenotando
@@ -128,23 +153,42 @@ Server-side sempre; il client valida solo per esperienza d'uso e non è mai
 fonte di verità.
 
 Regole portate invariate da `app.py`: trim e lunghezze massime sui campi di
-testo, regex email con limite di 254 caratteri.
+testo, regex email con limite di 254 caratteri. `note` segue lo stesso limite
+di `messaggio` nel form contatti, 2000 caratteri.
 
 Regole nuove:
 
-- `date` in formato ISO, non nel passato, non sabato o domenica, entro 6 mesi
-- `type`, `studio` e `fascia` verificati contro whitelist
+- `date` in formato ISO, non prima del minimo consentito, non sabato o
+  domenica, entro 6 mesi
+- `type` e `fascia` verificati contro whitelist
+- `studio` verificato contro whitelist solo se `type` non è `controllo-online`
+- `privacy` deve essere esattamente `true`, altrimenti 422
+
+### Nota sul consenso privacy
+
+Oggi `app.py` **non verifica il campo `privacy`** in nessuno dei due endpoint:
+il controllo esiste solo lato client in `booking.js` e `main.js`, quindi è
+aggirabile con una POST diretta. Trattandosi di prenotazioni sanitarie, questo
+design chiude il buco invece di ereditarlo — il consenso diventa una regola di
+validazione server-side come tutte le altre.
 
 ## Errori
+
+Identici per entrambi gli endpoint.
 
 | Caso | Codice | Comportamento |
 |---|---|---|
 | JSON malformato | 400 | messaggio generico |
-| Validazione fallita | 422 | messaggio specifico sul campo |
+| Validazione fallita, consenso privacy incluso | 422 | messaggio specifico sul campo |
 | Resend non risponde o fallisce | 502 | messaggio con indirizzo email diretto come fallback |
+| Honeypot compilato | 200 | `{ ok: true }`, nessuna email inviata |
 
 Il fallback sul 502 è deliberato: una richiesta di appuntamento persa in
 silenzio è un paziente perso.
+
+Il 200 sull'honeypot è altrettanto deliberato: un bot che riceve un errore
+capisce di essere stato individuato e riprova cambiando strategia. Un
+successo finto lo lascia convinto di aver funzionato.
 
 ## Anti-spam
 
@@ -156,24 +200,30 @@ Turnstile va aggiunto solo se lo spam si presenta davvero.
 
 ## Test
 
-Un unico file `test/forms.test.js`: sei payload inviati a un base URL
+Un unico file `test/forms.test.js`: otto payload inviati a un base URL
 parametrico.
 
-1. Payload valido → 200
+1. Payload valido → 200 `{ ok: true }`
 2. Email invalida → 422
 3. Campo obbligatorio mancante → 422
-4. Data nel passato → 422
+4. Data prima del minimo consentito → 422
 5. Data nel weekend → 422
-6. Honeypot compilato → richiesta scartata
+6. `privacy` assente o `false` → 422
+7. `controllo-online` senza `studio` → 200 (lo studio non è richiesto)
+8. Honeypot compilato → 200 senza invio email
 
-Solo `assert`, nessun framework. Gira contro `wrangler pages dev` in locale e
-contro la produzione cambiando il base URL.
+Gira con `node --test`, solo `assert`, nessun framework. Base URL
+parametrico: `wrangler pages dev` in locale, oppure la produzione.
 
 ## Configurazione del deploy
 
 Cloudflare Pages rileva `requirements.txt` e tenta un build Python. Nelle
 impostazioni del progetto: framework preset `None`, build command vuoto,
 output directory `public`.
+
+Il repo non ha ancora un `package.json`. Ne serve uno minimo per `wrangler`
+(dipendenza di sviluppo) e per lo script di test; nessuna dipendenza a runtime
+— le Functions usano solo `fetch` e le API standard di Workers.
 
 Secret di Pages: `RESEND_API_KEY`. Il dominio è già su Cloudflare, quindi la
 verifica DNS richiesta da Resend è immediata.
