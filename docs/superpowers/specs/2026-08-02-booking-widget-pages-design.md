@@ -48,7 +48,7 @@ public/                    unica fonte di verità, servita da Pages
   img/profilo.jpeg
   robots.txt
   sitemap.xml
-_headers                   header di sicurezza
+  _headers                 header di sicurezza
 lib/form.js                validate() + sendMail() condivisi
 functions/api/book.js
 functions/api/contact.js
@@ -65,7 +65,10 @@ separazione esplicita e non dipende da quella convenzione.
 
 Gli header di sicurezza oggi impostati da `@app.after_request` si spostano nel
 file `_headers`: `X-Content-Type-Options`, `X-Frame-Options`,
-`Referrer-Policy`, `Strict-Transport-Security`.
+`Referrer-Policy`, `Strict-Transport-Security`. Il file va in `public/`, non
+nella radice del repository: Pages lo legge dalla directory di output.
+Verificato in esecuzione — dalla radice due header su quattro non vengono
+applicati.
 
 `app.py`, `requirements.txt` e `templates/` vengono **eliminati**: scegliendo
 Resend come trasporto, mantenere in parallelo una versione Flask

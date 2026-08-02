@@ -663,7 +663,6 @@ em {
 .contatti-map  { grid-area: map; }
 .contatti-form { grid-area: form; }
 
-.booking-widget { display: none; }
 
 .contatti-map {
   position: relative;
@@ -716,17 +715,6 @@ em {
 .social-link:hover { background: var(--sage-dark); transform: translateY(-2px); }
 .social-link svg { width: 16px; height: 16px; stroke: var(--text-medium); transition: stroke var(--t); }
 .social-link:hover svg { stroke: var(--white); }
-
-/* =========================================
-   BOOKING WIDGET
-   ========================================= */
-.booking-widget {
-  background: var(--white);
-  border-radius: var(--radius-lg);
-  padding: 28px 28px 26px;
-  box-shadow: var(--shadow-md);
-  border: 1px solid var(--border-color);
-}
 
 /* ── Divider ── */
 .form-divider {
@@ -961,8 +949,6 @@ em {
   .contact-form  { padding: 28px 20px; }
   .form-row      { grid-template-columns: 1fr; }
 
-  /* Booking widget mobile */
-  .booking-widget       { padding: 20px 16px 20px; }
 
   /* Footer */
   .footer-inner  { grid-template-columns: 1fr; gap: 28px; }

@@ -24,7 +24,7 @@
 | `functions/api/contact.js` | endpoint messaggio generico |
 | `test/form.test.js` | unit test di `lib/form.js`, senza rete |
 | `test/api.test.js` | test HTTP contro `wrangler pages dev` |
-| `_headers` | header di sicurezza |
+| `public/_headers` | header di sicurezza (Pages lo legge dalla directory di output, non dalla radice) |
 | `package.json` | `wrangler` come devDependency, script di test |
 
 `lib/form.js` è l'unico file con logica condivisa: le due Functions sono glue di ~25 righe. I test sono divisi perché hanno costi diversi — `form.test.js` gira in millisecondi senza server, `api.test.js` richiede `wrangler` avviato.
@@ -1116,7 +1116,9 @@ Sitemap: https://giuliadadalt.it/sitemap.xml
 </urlset>
 ```
 
-- [ ] **Step 3: Creare `_headers` nella radice del repo**
+- [ ] **Step 3: Creare `public/_headers`**
+
+Va dentro `public/`, non nella radice: Pages legge questo file dalla directory di output. Verificato in esecuzione — dalla radice `X-Frame-Options` e `Strict-Transport-Security` non vengono applicati.
 
 ```
 /*
