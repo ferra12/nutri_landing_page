@@ -1,42 +1,36 @@
 # Nutri Landing Page
 
-## Deploy online con Cloudflare Tunnel
+Sito statico su Cloudflare Pages, con due Pages Functions per le form.
 
-### Prerequisiti
-- `cloudflared` installato e tunnel `nutri-tunnel` già configurato
-- Python + dipendenze installate (`pip install -r requirements.txt`)
-
-### Avvio
-
-Aprire **due terminali**:
-
-**Terminale 1 — Flask app:**
-```bash
-python app.py
-```
-
-**Terminale 2 — Cloudflare Tunnel:**
-```bash
-cloudflared tunnel run nutri-tunnel
-```
-
-Flask gira su `localhost:5000`, Cloudflare espone il sito su HTTPS pubblico.
-
----
-
-### Setup iniziale tunnel (solo prima volta)
+## Sviluppo locale
 
 ```bash
-python app.py
-
-cloudflared tunnel route dns nutri-tunnel tuodominio.com
+npm install
+npm run dev
 ```
 
-Config `~/.cloudflared/config.yml`:
-```yaml
-tunnel: <TUNNEL_ID>
-ingress:
-  - hostname: tuodominio.com
-    service: http://localhost:5000
-  - service: http_status:404
+Il sito gira su `http://localhost:8788`. Senza `RESEND_API_KEY` l'invio email
+viene simulato e loggato in console, quindi le form si possono provare senza
+spedire niente.
+
+## Test
+
+```bash
+npm run test:unit          # validazione e helper date, non serve il server
+npm run dev                # in un terminale
+npm run test:api           # in un altro
 ```
+
+## Deploy
+
+Push su `main`: Cloudflare Pages fa il deploy da solo.
+
+Impostazioni del progetto Pages:
+- Framework preset: `None`
+- Build command: vuoto
+- Build output directory: `public`
+
+Il file `_headers` sta in `public/`, perché Pages lo legge dalla directory di
+output e non dalla radice del repository.
+
+Variabili d'ambiente: `RESEND_API_KEY` (secret), `MAIL_TO`, `MAIL_FROM`.
