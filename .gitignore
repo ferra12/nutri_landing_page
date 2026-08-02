@@ -19,3 +19,6 @@ service-account-key.json
 Thumbs.db
 
 firebase-debug.log
+
+node_modules/
+.wrangler/

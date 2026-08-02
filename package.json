@@ -1,0 +1,13 @@
+{
+  "name": "nutri-landing-page",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "wrangler pages dev public",
+    "test:unit": "node --test test/form.test.js",
+    "test:api": "node --test test/api.test.js"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
