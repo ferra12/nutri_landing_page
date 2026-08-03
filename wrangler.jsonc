@@ -1,7 +1,9 @@
 {
   "name": "nutri-landing-page",
+  "main": "src/index.js",
   "compatibility_date": "2024-09-23",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS"
   }
 }
