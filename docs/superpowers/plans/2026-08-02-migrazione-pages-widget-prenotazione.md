@@ -1180,7 +1180,7 @@ Sostituire il contenuto con:
 # Variabili di Pages (Settings -> Environment variables)
 RESEND_API_KEY=
 MAIL_TO=
-MAIL_FROM=no-reply@giuliadadalt.it
+MAIL_FROM=no-reply@send.giuliadadalt.it
 ```
 
 - [ ] **Step 4: Riscrivere `README.md`**
@@ -1256,7 +1256,7 @@ Creare l'account, aggiungere `giuliadadalt.it` come dominio e inserire i record 
 Settings → Environment variables, ambiente Production:
 - `RESEND_API_KEY` come **secret**
 - `MAIL_TO` con la casella che deve ricevere le richieste
-- `MAIL_FROM` con `no-reply@giuliadadalt.it`
+- `MAIL_FROM` con `no-reply@send.giuliadadalt.it` (sottodominio verificato su Resend, non la radice)
 
 - [ ] **Step 4: Verificare sull'URL di anteprima**
 

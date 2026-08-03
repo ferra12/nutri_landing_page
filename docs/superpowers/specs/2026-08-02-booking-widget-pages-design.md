@@ -265,7 +265,7 @@ Variabili d'ambiente di Pages:
 |---|---|
 | `RESEND_API_KEY` | secret; se assente `sendMail()` simula l'invio |
 | `MAIL_TO` | casella di Giulia che riceve le richieste |
-| `MAIL_FROM` | mittente su dominio verificato, es. `no-reply@giuliadadalt.it` |
+| `MAIL_FROM` | mittente su dominio verificato: `no-reply@send.giuliadadalt.it`. Resend richiede un sottodominio, non la radice, per non toccare l'MX esistente sulla radice (posta esistente, non collegata a questo sito) |
 
 Il dominio è già su Cloudflare, quindi la verifica DNS richiesta da Resend è
 immediata.
